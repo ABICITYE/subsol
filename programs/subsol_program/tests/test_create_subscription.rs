@@ -1,9 +1,12 @@
-use anchor_lang::solana_program::instruction::Instruction;
-use anchor_lang::solana_program::pubkey::Pubkey;
 use anchor_lang::{AccountDeserialize, InstructionData, ToAccountMetas};
+use anchor_spl::token::{Mint, Token, TokenAccount};
+use anchor_spl::associated_token::AssociatedToken;
 use litesvm::LiteSVM;
+use litesvm_token::{CreateAssociatedTokenAccount, CreateMint, MintTo};
+use anchor_lang::solana_program::instruction::Instruction;
 use solana_keypair::Keypair;
 use solana_message::{Message, VersionedMessage};
+use anchor_lang::solana_program::pubkey::Pubkey;
 use solana_signer::Signer;
 use solana_transaction::versioned::VersionedTransaction;
 
@@ -11,13 +14,28 @@ use solana_transaction::versioned::VersionedTransaction;
 fn test_create_subscription() {
     let mut svm = LiteSVM::new();
 
-    svm.add_program_from_file(subsol_program::ID, "/workspaces/subsol/subsol_program/target/deploy/subsol_program.so")
-        .unwrap();
+    svm.add_program_from_file(
+        subsol_program::ID,
+        "/workspaces/subsol/subsol_program/target/deploy/subsol_program.so",
+    )
+    .unwrap();
 
     let merchant = Keypair::new();
     let subscriber = Keypair::new();
 
     svm.airdrop(&subscriber.pubkey(), 1_000_000_000).unwrap();
+
+    let mint = CreateMint::new(&mut svm, &subscriber).decimals(6).send().unwrap();
+
+    let subscriber_token_account =
+        CreateAssociatedTokenAccount::new(&mut svm, &subscriber, &mint)
+            .owner(&subscriber.pubkey())
+            .send()
+            .unwrap();
+
+    MintTo::new(&mut svm, &subscriber, &mint, &subscriber_token_account, 100_000_000)
+        .send()
+        .unwrap();
 
     let (subscription_pda, _bump) = Pubkey::find_program_address(
         &[
@@ -32,6 +50,8 @@ fn test_create_subscription() {
         subscription: subscription_pda,
         merchant: merchant.pubkey(),
         subscriber: subscriber.pubkey(),
+        subscriber_token_account,
+        token_program: anchor_spl::token::ID,
         system_program: anchor_lang::system_program::ID,
     }
     .to_account_metas(None);
@@ -66,5 +86,5 @@ fn test_create_subscription() {
     assert_eq!(subscription.amount, 10_000_000);
     assert_eq!(subscription.period_seconds, 2_592_000);
 
-    println!("Subscription created and verified!");
+    println!("Subscription created, delegate approved, and verified!");
 }
