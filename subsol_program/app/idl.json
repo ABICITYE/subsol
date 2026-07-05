@@ -1,0 +1,275 @@
+{
+  "address": "HmYLKgRmZDAUG1tDPJ5xf55ut664EioACQQSyBAbA8MB",
+  "metadata": {
+    "name": "subsol",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Created with Anchor"
+  },
+  "instructions": [
+    {
+      "name": "cancel_subscription",
+      "discriminator": [
+        60,
+        139,
+        189,
+        242,
+        191,
+        208,
+        143,
+        18
+      ],
+      "accounts": [
+        {
+          "name": "subscription",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  117,
+                  98,
+                  115,
+                  99,
+                  114,
+                  105,
+                  112,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "subscription.merchant",
+                "account": "Subscription"
+              },
+              {
+                "kind": "account",
+                "path": "subscription.subscriber",
+                "account": "Subscription"
+              }
+            ]
+          }
+        },
+        {
+          "name": "subscriber",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "subscription"
+          ]
+        },
+        {
+          "name": "subscriber_token_account",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "create_subscription",
+      "discriminator": [
+        65,
+        71,
+        10,
+        60,
+        249,
+        82,
+        197,
+        12
+      ],
+      "accounts": [
+        {
+          "name": "subscription",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  117,
+                  98,
+                  115,
+                  99,
+                  114,
+                  105,
+                  112,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "merchant"
+              },
+              {
+                "kind": "account",
+                "path": "subscriber"
+              }
+            ]
+          }
+        },
+        {
+          "name": "merchant"
+        },
+        {
+          "name": "subscriber",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "subscriber_token_account",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "period_seconds",
+          "type": "i64"
+        }
+      ]
+    },
+    {
+      "name": "process_payment",
+      "discriminator": [
+        189,
+        81,
+        30,
+        198,
+        139,
+        186,
+        115,
+        23
+      ],
+      "accounts": [
+        {
+          "name": "subscription",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  117,
+                  98,
+                  115,
+                  99,
+                  114,
+                  105,
+                  112,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "subscription.merchant",
+                "account": "Subscription"
+              },
+              {
+                "kind": "account",
+                "path": "subscription.subscriber",
+                "account": "Subscription"
+              }
+            ]
+          }
+        },
+        {
+          "name": "subscriber_token_account",
+          "writable": true
+        },
+        {
+          "name": "merchant_token_account",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": []
+    }
+  ],
+  "accounts": [
+    {
+      "name": "Subscription",
+      "discriminator": [
+        64,
+        7,
+        26,
+        135,
+        102,
+        132,
+        98,
+        33
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "TooEarly",
+      "msg": "Payment period hasn't elapsed yet"
+    }
+  ],
+  "types": [
+    {
+      "name": "Subscription",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "merchant",
+            "type": "pubkey"
+          },
+          {
+            "name": "subscriber",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "period_seconds",
+            "type": "i64"
+          },
+          {
+            "name": "last_paid",
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    }
+  ]
+}
