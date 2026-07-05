@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SubSol — Recurring payments protocol on Solana</title>
+<meta name="description" content="SubSol turns one customer approval into automatic USDC subscription payments on Solana. No Stripe. No invoices. No borders.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://api.fontshare.com/v2/css?f[]=clash-display@500,600,700&f[]=general-sans@400,401,500,501,600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Spline+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#17102E;
+  --ink-2:#1F1740;
+  --ink-3:#2A1F55;
+  --paper:#F2EFE7;
+  --paper-dim:#E8E4D7;
+  --mint:#14F195;
+  --purple:#9945FF;
+  --sage:#9C8FC4;
+  --sage-dim:rgba(156,143,196,.32);
+  --gold:#C6A15B;
+  --text-on-paper:#292236;
+  --muted-on-paper:#655D78;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  font-family:'General Sans',system-ui,sans-serif;
+  background:var(--ink);
+  color:var(--paper);
+  font-size:16px;
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+a{color:inherit}
+a:focus-visible,button:focus-visible{outline:2px solid var(--mint);outline-offset:3px;border-radius:2px}
+.mono{font-family:'Spline Sans Mono',monospace}
+.wrap{max-width:1120px;margin:0 auto;padding:0 24px}
+
+/* ---------- header ---------- */
+header{
+  border-bottom:1px solid var(--sage-dim);
+  position:sticky;top:0;z-index:50;
+  background:rgba(23,16,46,.88);
+  backdrop-filter:blur(8px);
+}
+.nav{display:flex;align-items:center;justify-content:space-between;height:64px}
+.wordmark{
+  font-family:'Clash Display',sans-serif;font-weight:600;font-size:1.35rem;
+  letter-spacing:.01em;text-decoration:none;display:flex;align-items:center;gap:.55rem;
+}
+.wordmark .dot{width:9px;height:9px;border-radius:50%;background:var(--mint);box-shadow:0 0 10px var(--mint);animation:pulse 3s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.nav-links{display:flex;gap:1.6rem;align-items:center}
+.nav-links a{font-size:.85rem;letter-spacing:.06em;text-transform:uppercase;text-decoration:none;color:var(--sage);transition:color .2s}
+.nav-links a:hover{color:var(--paper)}
+.nav-links a.pill{
+  border:1px solid var(--sage-dim);border-radius:999px;padding:.45rem 1.05rem;color:var(--paper);
+}
+.nav-links a.pill:hover{border-color:var(--purple);color:#C9A8FF}
+
+/* ---------- hero ---------- */
+.hero{position:relative;overflow:hidden;padding:5.5rem 0 6rem}
+.hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:3rem;align-items:center;position:relative;z-index:2}
+.eyebrow{
+  font-family:'Spline Sans Mono',monospace;font-size:.72rem;letter-spacing:.22em;
+  text-transform:uppercase;color:var(--sage);margin-bottom:1.4rem;display:flex;align-items:center;gap:.7rem;
+}
+.eyebrow::before{content:"";display:block;width:34px;height:2px;background:linear-gradient(90deg,var(--purple),var(--mint))}
+h1{
+  font-family:'Clash Display',sans-serif;font-weight:600;
+  font-size:clamp(2.7rem,5.6vw,4.4rem);line-height:1.02;letter-spacing:-.02em;
+}
+h1 em{font-style:normal;color:var(--purple)}
+.hero-sub{margin-top:1.5rem;max-width:34rem;color:#CFC7E4;font-size:1.06rem}
+.hero-sub strong{color:var(--paper);font-weight:600}
+.cta-row{display:flex;gap:.9rem;margin-top:2.3rem;flex-wrap:wrap}
+.btn{
+  display:inline-flex;align-items:center;gap:.55rem;text-decoration:none;
+  font-weight:600;font-size:.92rem;padding:.85rem 1.5rem;border-radius:4px;
+  transition:transform .15s ease,box-shadow .15s ease;
+}
+.btn:hover{transform:translateY(-2px)}
+.btn-primary{background:var(--mint);color:var(--ink);box-shadow:0 4px 24px rgba(20,241,149,.25)}
+.btn-primary:hover{box-shadow:0 8px 32px rgba(20,241,149,.4)}
+.btn-ghost{border:1px solid var(--sage-dim);color:var(--paper)}
+.btn-ghost:hover{border-color:var(--sage)}
+.hero-note{margin-top:1.6rem;font-family:'Spline Sans Mono',monospace;font-size:.74rem;color:var(--sage);letter-spacing:.04em}
+.hero-note b{color:var(--mint);font-weight:500}
+
+/* guilloche */
+.guilloche{
+  position:absolute;right:-160px;top:50%;transform:translateY(-50%);
+  width:820px;height:820px;opacity:.5;pointer-events:none;z-index:1;
+}
+@keyframes guillocheSpin{from{transform:translateY(-50%) rotate(0deg)}to{transform:translateY(-50%) rotate(360deg)}}
+.guilloche{animation:guillocheSpin 240s linear infinite}
+
+/* ---------- the instrument ---------- */
+.instrument{
+  position:relative;z-index:2;
+  background:linear-gradient(160deg,var(--ink-2),var(--ink));
+  border:1px solid var(--sage-dim);border-radius:10px;
+  padding:1.8rem 1.6rem 1.4rem;
+  box-shadow:0 30px 80px rgba(0,0,0,.45);
+}
+.instrument-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:1.2rem}
+.instrument-title{font-family:'Spline Sans Mono',monospace;font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;color:var(--sage)}
+.chip{
+  font-family:'Spline Sans Mono',monospace;font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--mint);border:1px solid rgba(20,241,149,.4);border-radius:999px;padding:.2rem .65rem;
+}
+.dial-zone{display:flex;gap:1.6rem;align-items:center}
+.dial{position:relative;width:210px;height:210px;flex-shrink:0}
+.dial svg{width:100%;height:100%;display:block}
+.dial-hand{transform-origin:105px 105px;animation:sweep 6s linear infinite}
+@keyframes sweep{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.dial-progress{
+  fill:none;stroke:var(--mint);stroke-width:3;stroke-linecap:round;
+  stroke-dasharray:590;animation:arc 6s linear infinite;
+  filter:drop-shadow(0 0 4px rgba(20,241,149,.6));
+}
+@keyframes arc{from{stroke-dashoffset:590}to{stroke-dashoffset:0}}
+.dial-center{
+  position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+}
+.dial-amount{font-family:'Clash Display',sans-serif;font-weight:700;font-size:1.55rem;line-height:1;color:var(--paper)}
+.dial-per{font-family:'Spline Sans Mono',monospace;font-size:.62rem;letter-spacing:.18em;text-transform:uppercase;color:var(--sage);margin-top:.45rem}
+.feed{flex:1;min-width:0}
+.feed-title{font-family:'Spline Sans Mono',monospace;font-size:.65rem;letter-spacing:.18em;text-transform:uppercase;color:var(--sage);margin-bottom:.7rem;display:flex;justify-content:space-between}
+.feed-count{color:var(--mint)}
+.feed-list{list-style:none;display:flex;flex-direction:column;gap:.5rem;min-height:148px}
+.feed-item{
+  font-family:'Spline Sans Mono',monospace;font-size:.74rem;color:#C9C1E0;
+  border:1px solid rgba(156,143,196,.22);border-radius:5px;padding:.5rem .7rem;
+  display:flex;justify-content:space-between;gap:.8rem;white-space:nowrap;overflow:hidden;
+  animation:slideIn .45s ease;
+}
+@keyframes slideIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+.feed-item .ok{color:var(--mint)}
+.feed-item .sig{color:var(--sage);overflow:hidden;text-overflow:ellipsis}
+.instrument-foot{
+  margin-top:1.2rem;padding-top:.9rem;border-top:1px dashed var(--sage-dim);
+  font-family:'Spline Sans Mono',monospace;font-size:.66rem;color:var(--sage);letter-spacing:.06em;
+  display:flex;justify-content:space-between;flex-wrap:wrap;gap:.4rem;
+}
+
+/* ---------- paper sections ---------- */
+.paper{background:var(--paper);color:var(--text-on-paper)}
+.section{padding:5.5rem 0}
+.section-label{
+  font-family:'Spline Sans Mono',monospace;font-size:.7rem;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--muted-on-paper);margin-bottom:1.1rem;display:flex;align-items:center;gap:.7rem;
+}
+.section-label::before{content:"";display:block;width:34px;height:1px;background:currentColor}
+h2{
+  font-family:'Clash Display',sans-serif;font-weight:600;font-size:clamp(1.9rem,3.6vw,2.7rem);
+  line-height:1.12;letter-spacing:-.01em;max-width:36rem;
+}
+.problem-grid{display:grid;grid-template-columns:1fr 1fr;gap:3.5rem;align-items:start;margin-top:2.6rem}
+.wall{
+  border:1.5px solid #C7BFA6;border-radius:8px;background:var(--paper-dim);
+  padding:1.6rem 1.7rem;position:relative;
+}
+.wall-stamp{
+  position:absolute;top:-14px;right:20px;transform:rotate(4deg);
+  font-family:'Spline Sans Mono',monospace;font-size:.62rem;letter-spacing:.16em;text-transform:uppercase;
+  color:#A6493B;border:1.5px solid #A6493B;border-radius:3px;padding:.25rem .6rem;background:var(--paper);
+}
+.wall p{color:var(--muted-on-paper);font-size:.95rem}
+.wall .quote{
+  font-family:'General Sans',sans-serif;font-weight:500;font-style:italic;font-size:1.22rem;color:var(--text-on-paper);
+  margin-bottom:.9rem;line-height:1.35;
+}
+.answer p{font-size:1.05rem;margin-bottom:1.1rem}
+.answer p strong{font-weight:600}
+.stat-row{display:flex;gap:2.2rem;margin-top:1.8rem;flex-wrap:wrap}
+.stat b{font-family:'Clash Display',sans-serif;font-weight:700;font-size:1.7rem;display:block;line-height:1}
+.stat span{font-family:'Spline Sans Mono',monospace;font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted-on-paper)}
+
+/* ---------- how it works ---------- */
+.steps{margin-top:3rem;border-top:1px solid #CFC8B0}
+.step{
+  display:grid;grid-template-columns:90px 1fr 1.2fr;gap:2rem;
+  padding:2.2rem 0;border-bottom:1px solid #CFC8B0;align-items:baseline;
+}
+.step-no{font-family:'Clash Display',sans-serif;font-weight:700;font-size:2.4rem;color:#9E7FE0;line-height:1}
+.step h3{font-family:'Clash Display',sans-serif;font-weight:600;font-size:1.35rem;letter-spacing:-.01em}
+.step p{color:var(--muted-on-paper);font-size:.97rem}
+.step p code{
+  font-family:'Spline Sans Mono',monospace;font-size:.82rem;background:var(--paper-dim);
+  border:1px solid #CFC8B0;border-radius:4px;padding:.08rem .4rem;color:var(--text-on-paper);
+}
+
+/* ---------- proof (specimen) ---------- */
+.specimen{position:relative;overflow:hidden}
+.specimen .wrap{position:relative;z-index:2}
+.specimen-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:3rem;margin-top:2.6rem;align-items:start}
+.field{margin-bottom:1.7rem}
+.field-label{font-family:'Spline Sans Mono',monospace;font-size:.65rem;letter-spacing:.2em;text-transform:uppercase;color:var(--sage);margin-bottom:.5rem}
+.field-value{
+  font-family:'Spline Sans Mono',monospace;font-size:.86rem;color:var(--paper);
+  border:1px solid var(--sage-dim);border-radius:6px;padding:.75rem .9rem;
+  display:flex;align-items:center;justify-content:space-between;gap:.8rem;
+  background:rgba(255,255,255,.02);word-break:break-all;
+}
+.copy-btn{
+  font-family:'Spline Sans Mono',monospace;font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;
+  background:none;border:1px solid var(--sage-dim);border-radius:4px;color:var(--sage);
+  padding:.3rem .6rem;cursor:pointer;flex-shrink:0;transition:all .2s;
+}
+.copy-btn:hover{color:var(--mint);border-color:var(--mint)}
+.ix-list{list-style:none;display:flex;flex-direction:column;gap:.6rem}
+.ix-list li{
+  font-family:'Spline Sans Mono',monospace;font-size:.84rem;color:#CFC7E4;
+  display:flex;align-items:center;gap:.7rem;
+}
+.ix-list li::before{content:"›";color:var(--mint)}
+.ix-list li span{color:var(--sage);font-size:.72rem}
+.seal{
+  width:170px;height:170px;border:1.5px solid var(--gold);border-radius:50%;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+  color:var(--gold);position:relative;margin-top:1rem;
+}
+.seal::before{content:"";position:absolute;inset:7px;border:1px dashed rgba(198,161,91,.5);border-radius:50%}
+.seal b{font-family:'Clash Display',sans-serif;font-weight:700;font-size:2.1rem;line-height:1}
+.seal span{font-family:'Spline Sans Mono',monospace;font-size:.58rem;letter-spacing:.2em;text-transform:uppercase;margin-top:.4rem;max-width:110px}
+.tests{display:flex;align-items:center;gap:.6rem;font-family:'Spline Sans Mono',monospace;font-size:.78rem;color:var(--mint);margin-top:.4rem}
+.tests::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--mint);box-shadow:0 0 8px var(--mint)}
+
+/* ---------- footer ---------- */
+.footer-cta{padding:6rem 0 3rem;text-align:center;border-top:1px solid var(--sage-dim)}
+.footer-cta h2{margin:0 auto 1.2rem;color:var(--paper)}
+.footer-cta .cta-row{justify-content:center}
+.colophon{
+  margin-top:4rem;padding:1.4rem 0;border-top:1px dashed var(--sage-dim);
+  font-family:'Spline Sans Mono',monospace;font-size:.68rem;letter-spacing:.08em;color:var(--sage);
+  display:flex;justify-content:space-between;flex-wrap:wrap;gap:.6rem;
+}
+
+/* ---------- responsive ---------- */
+@media(max-width:900px){
+  .hero-grid,.problem-grid,.specimen-grid{grid-template-columns:1fr}
+  .guilloche{right:-320px;opacity:.25}
+  .step{grid-template-columns:56px 1fr;gap:1rem}
+  .step p{grid-column:2}
+  .dial-zone{flex-direction:column}
+  .dial{width:190px;height:190px}
+  .feed{width:100%}
+  .seal{margin:2rem auto 0}
+}
+@media(prefers-reduced-motion:reduce){
+  .dial-hand,.dial-progress,.guilloche,.wordmark .dot{animation:none}
+  .feed-item{animation:none}
+  html{scroll-behavior:auto}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap nav">
+    <a class="wordmark" href="#"><span class="dot"></span>SubSol</a>
+    <nav class="nav-links">
+      <a href="#how">How it works</a>
+      <a href="#proof">On-chain proof</a>
+      <a class="pill" href="https://github.com/ABICITYE/subsol" target="_blank" rel="noopener">GitHub ↗</a>
+    </nav>
+  </div>
+</header>
+
+<!-- ================= HERO ================= -->
+<section class="hero">
+  <svg class="guilloche" viewBox="0 0 800 800" aria-hidden="true" id="guilloche"></svg>
+  <div class="wrap hero-grid">
+    <div>
+      <p class="eyebrow">Recurring payments protocol · Solana</p>
+      <h1>Billing that <em>collects itself.</em></h1>
+      <p class="hero-sub">One customer approval becomes automatic USDC payments — <strong>every cycle, on time, on-chain.</strong> No Stripe account. No invoices chased. No country left off the list.</p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="https://explorer.solana.com/address/HmYLKgRmZDAUG1tDPJ5xf55ut664EioACQQSyBAbA8MB?cluster=devnet" target="_blank" rel="noopener">View live program ↗</a>
+        <a class="btn btn-ghost" href="https://github.com/ABICITYE/subsol" target="_blank" rel="noopener">Read the code</a>
+      </div>
+      <p class="hero-note">Deployed on devnet · <b>3/3 tests passing</b> · Anchor + SPL Token</p>
+    </div>
+
+    <div class="instrument" aria-label="Simulated demo of a recurring subscription payment">
+      <div class="instrument-head">
+        <span class="instrument-title">One subscription, running</span>
+        <span class="chip">Simulated</span>
+      </div>
+      <div class="dial-zone">
+        <div class="dial">
+          <svg viewBox="0 0 210 210" aria-hidden="true">
+            <circle cx="105" cy="105" r="94" fill="none" stroke="rgba(156,143,196,.25)" stroke-width="1.5"/>
+            <g id="ticks"></g>
+            <circle class="dial-progress" cx="105" cy="105" r="94" transform="rotate(-90 105 105)"/>
+            <line class="dial-hand" x1="105" y1="105" x2="105" y2="22" stroke="rgba(239,235,220,.85)" stroke-width="1.5"/>
+            <circle cx="105" cy="105" r="3" fill="var(--mint)"/>
+          </svg>
+          <div class="dial-center">
+            <div class="dial-amount">9.99</div>
+            <div class="dial-per">USDC / month</div>
+          </div>
+        </div>
+        <div class="feed">
+          <div class="feed-title"><span>Payments processed</span><span class="feed-count" id="count">0</span></div>
+          <ul class="feed-list" id="feed"></ul>
+        </div>
+      </div>
+      <div class="instrument-foot">
+        <span>customer approved once · SPL delegate</span>
+        <span>1 month ≈ 6 seconds here</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= PROBLEM ================= -->
+<section class="paper section">
+  <div class="wrap">
+    <p class="section-label">The problem</p>
+    <h2>Great software, built in the wrong postcode.</h2>
+    <div class="problem-grid">
+      <div class="wall">
+        <span class="wall-stamp">Application declined</span>
+        <p class="quote">"Unfortunately, Stripe is not currently available in your country."</p>
+        <p>The message thousands of African founders know by heart. Subscription billing — the engine of every SaaS business — is gated behind payment processors that won't onboard them, freeze funds without warning, or settle in days while taking 3% off the top.</p>
+      </div>
+      <div class="answer">
+        <p><strong>SubSol removes the gatekeeper.</strong> Subscriptions live directly on Solana as on-chain accounts. A merchant needs a wallet — not an approval letter. A customer approves once, and USDC moves on schedule for as long as the subscription runs.</p>
+        <p>Settlement is measured in seconds, not banking days. The protocol takes a flat 0.5% — and nothing else.</p>
+        <div class="stat-row">
+          <div class="stat"><b>0.5%</b><span>flat fee</span></div>
+          <div class="stat"><b>~1s</b><span>settlement</span></div>
+          <div class="stat"><b>0</b><span>approval letters</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= HOW IT WORKS ================= -->
+<section class="paper section" id="how" style="padding-top:0">
+  <div class="wrap">
+    <p class="section-label">How it works</p>
+    <h2>Three instructions. The whole machine.</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-no">1</div>
+        <h3>Customer approves once</h3>
+        <p>An SPL token delegate grants the subscription authority to move exactly the agreed amount — <code>create_subscription</code> writes the terms to a PDA. SubSol never takes custody of anyone's funds.</p>
+      </div>
+      <div class="step">
+        <div class="step-no">2</div>
+        <h3>The schedule lives on-chain</h3>
+        <p>Amount, interval, merchant, next-payment time — all stored in the subscription account. There is no server to keep alive, no webhook to babysit, no database to lose.</p>
+      </div>
+      <div class="step">
+        <div class="step-no">3</div>
+        <h3>Every cycle, payment fires</h3>
+        <p><code>process_payment</code> checks the clock, moves USDC to the merchant, takes the 0.5% fee, and sets the next due date. The customer can walk away anytime with <code>cancel_subscription</code>.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= PROOF ================= -->
+<section class="section specimen" id="proof">
+  <div class="wrap">
+    <p class="eyebrow">On-chain proof</p>
+    <h2 style="color:var(--paper)">Not a pitch deck. A deployed program.</h2>
+    <div class="specimen-grid">
+      <div>
+        <div class="field">
+          <p class="field-label">Program ID · Devnet</p>
+          <div class="field-value">
+            <span id="pid">HmYLKgRmZDAUG1tDPJ5xf55ut664EioACQQSyBAbA8MB</span>
+            <button class="copy-btn" id="copyBtn" aria-label="Copy program ID">Copy</button>
+          </div>
+        </div>
+        <div class="field">
+          <p class="field-label">Instructions</p>
+          <ul class="ix-list">
+            <li>create_subscription <span>— terms to PDA, delegate set</span></li>
+            <li>process_payment <span>— clock-gated USDC transfer + fee</span></li>
+            <li>cancel_subscription <span>— revoke, close, walk away</span></li>
+          </ul>
+        </div>
+        <div class="field">
+          <p class="field-label">Test suite</p>
+          <p class="tests">3/3 LiteSVM tests passing</p>
+        </div>
+        <div class="cta-row" style="margin-top:2rem">
+          <a class="btn btn-primary" href="https://explorer.solana.com/address/HmYLKgRmZDAUG1tDPJ5xf55ut664EioACQQSyBAbA8MB?cluster=devnet" target="_blank" rel="noopener">Verify on Explorer ↗</a>
+          <a class="btn btn-ghost" href="https://github.com/ABICITYE/subsol" target="_bla
