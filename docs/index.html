@@ -115,14 +115,12 @@ h1 em{font-style:normal;color:var(--purple)}
 .dial-zone{display:flex;gap:1.6rem;align-items:center}
 .dial{position:relative;width:210px;height:210px;flex-shrink:0}
 .dial svg{width:100%;height:100%;display:block}
-.dial-hand{transform-origin:105px 105px;animation:sweep 6s linear infinite}
-@keyframes sweep{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.dial-hand{transform-origin:105px 105px}
 .dial-progress{
   fill:none;stroke:var(--mint);stroke-width:3;stroke-linecap:round;
-  stroke-dasharray:590;animation:arc 6s linear infinite;
+  stroke-dasharray:590;stroke-dashoffset:590;
   filter:drop-shadow(0 0 4px rgba(20,241,149,.6));
 }
-@keyframes arc{from{stroke-dashoffset:590}to{stroke-dashoffset:0}}
 .dial-center{
   position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
 }
@@ -252,7 +250,7 @@ h2{
   .seal{margin:2rem auto 0}
 }
 @media(prefers-reduced-motion:reduce){
-  .dial-hand,.dial-progress,.guilloche,.wordmark .dot{animation:none}
+  .guilloche,.wordmark .dot{animation:none}
   .feed-item{animation:none}
   html{scroll-behavior:auto}
 }
@@ -395,4 +393,11 @@ h2{
         </div>
         <div class="cta-row" style="margin-top:2rem">
           <a class="btn btn-primary" href="https://explorer.solana.com/address/HmYLKgRmZDAUG1tDPJ5xf55ut664EioACQQSyBAbA8MB?cluster=devnet" target="_blank" rel="noopener">Verify on Explorer ↗</a>
-          <a class="btn btn-ghost" href="https://github.com/ABICITYE/subsol" target="_bla
+          <a class="btn btn-ghost" href="https://github.com/ABICITYE/subsol" target="_blank" rel="noopener">Source on GitHub</a>
+        </div>
+      </div>
+      <div>
+        <div class="field">
+          <p class="field-label">Stack</p>
+          <ul class="ix-list">
+            <li>Rust + Anchor <s
