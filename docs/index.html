@@ -289,24 +289,16 @@ h2{
         <span class="instrument-title">One subscription, running</span>
         <span class="chip">Simulated</span>
       </div>
-      <div class="dial-zone">
-        <div class="dial">
-          <svg viewBox="0 0 210 210" aria-hidden="true">
-            <circle cx="105" cy="105" r="94" fill="none" stroke="rgba(156,143,196,.25)" stroke-width="1.5"/>
-            <g id="ticks"></g>
-            <circle class="dial-progress" cx="105" cy="105" r="94" transform="rotate(-90 105 105)"/>
-            <line class="dial-hand" x1="105" y1="105" x2="105" y2="22" stroke="rgba(239,235,220,.85)" stroke-width="1.5"/>
-            <circle cx="105" cy="105" r="3" fill="var(--mint)"/>
-          </svg>
-          <div class="dial-center">
-            <div class="dial-amount">9.99</div>
-            <div class="dial-per">USDC / month</div>
-          </div>
+      <div class="dial-zone" style="flex-direction:column;align-items:stretch;gap:1.2rem">
+        <div style="text-align:center;padding:.6rem 0 .2rem">
+          <div class="dial-amount" style="font-size:3.2rem">9.99</div>
+          <div class="dial-per">USDC / month · active</div>
         </div>
-        <div class="feed">
-          <div class="feed-title"><span>Payments processed</span><span class="feed-count" id="count">0</span></div>
-          <ul class="feed-list" id="feed"></ul>
-        </div>
+        <ul class="feed-list" style="min-height:auto">
+          <li class="feed-item"><span><span class="ok">&#10003;</span> 9.99 USDC &#8594; merchant</span><span class="sig">cycle 3 &middot; 7pQm&#8230;2vLk</span></li>
+          <li class="feed-item"><span><span class="ok">&#10003;</span> 9.99 USDC &#8594; merchant</span><span class="sig">cycle 2 &middot; 4x2k&#8230;9fRj</span></li>
+          <li class="feed-item"><span><span class="ok">&#10003;</span> 9.99 USDC &#8594; merchant</span><span class="sig">cycle 1 &middot; 9wYt&#8230;5nHr</span></li>
+        </ul>
       </div>
       <div class="instrument-foot">
         <span>customer approved once · SPL delegate</span>
