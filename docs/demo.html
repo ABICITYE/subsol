@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SubSol — Live devnet specimen</title>
+<meta name="description" content="Connect Phantom and run a real recurring USDC subscription on Solana devnet: create, process a payment, cancel.">
+<link href="https://api.fontshare.com/v2/css?f[]=clash-display@500,600,700&f[]=general-sans@400,500,600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Spline+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#17102E; --ink-2:#1F1740; --ink-3:#2A1F55;
+  --paper:#F2EFE7; --mint:#14F195; --purple:#9945FF;
+  --sage:#9C8FC4; --line:rgba(156,143,196,.24); --line-2:rgba(156,143,196,.14);
+  --danger:#FF6B6B; --amber:#F5C451;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family:'General Sans',system-ui,sans-serif;
+  background:var(--ink); color:var(--paper);
+  line-height:1.5; -webkit-font-smoothing:antialiased;
+  min-height:100vh;
+}
+a{color:var(--mint);text-decoration:none}
+.mono{font-family:'Spline Sans Mono',monospace}
+.shell{max-width:640px;margin:0 auto;padding:0 22px}
+
+/* masthead */
+.mast{display:flex;align-items:baseline;justify-content:space-between;padding:22px 0 12px}
+.wordmark{font-family:'Clash Display',sans-serif;font-weight:600;font-size:1.25rem;letter-spacing:-.01em;display:flex;align-items:center;gap:.5rem}
+.wordmark .dot{width:8px;height:8px;border-radius:50%;background:var(--mint);box-shadow:0 0 9px var(--mint)}
+.mast-meta{font-family:'Spline Sans Mono',monospace;font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;color:var(--mint)}
+.specimen-id{font-family:'Spline Sans Mono',monospace;font-size:.62rem;letter-spacing:.06em;color:var(--sage);padding-bottom:16px;border-bottom:1px solid var(--line);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.specimen-id a{color:var(--sage);text-decoration:underline;text-underline-offset:2px}
+
+/* hero */
+.hero{padding:40px 0 30px;border-bottom:1px solid var(--line)}
+.eyebrow{font-family:'Spline Sans Mono',monospace;font-size:.64rem;letter-spacing:.22em;text-transform:uppercase;color:var(--sage);display:flex;align-items:center;gap:.7rem;margin-bottom:20px}
+.eyebrow::before{content:"";width:30px;height:2px;background:linear-gradient(90deg,var(--purple),var(--mint))}
+h1{font-family:'Clash Display',sans-serif;font-weight:600;font-size:clamp(2.4rem,9vw,3.4rem);line-height:.98;letter-spacing:-.03em;margin-bottom:18px}
+h1 em{font-style:normal;color:var(--purple)}
+.deck{font-size:.96rem;color:#CFC7E4;max-width:34rem}
+
+/* generic section head */
+.sec{padding:26px 0;border-bottom:1px solid var(--line)}
+.sec-label{font-family:'Spline Sans Mono',monospace;font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;color:var(--sage);margin-bottom:18px}
+
+/* buttons */
+.btn{font-family:'General Sans',sans-serif;font-weight:600;font-size:.9rem;padding:.72rem 1.2rem;border:none;cursor:pointer;transition:opacity .12s,background .12s}
+.btn:active{transform:translateY(1px)}
+.btn-primary{background:var(--mint);color:var(--ink)}
+.btn-purple{background:var(--purple);color:#fff}
+.btn-line{background:transparent;border:1px solid var(--sage);color:var(--paper)}
+.btn:disabled{opacity:.32;cursor:not-allowed}
+.btn-full{width:100%}
+
+/* wallet as a ruled statement */
+.stmt-row{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:12px 0;border-bottom:1px solid var(--line-2)}
+.stmt-row:last-child{border-bottom:none}
+.stmt-k{font-family:'Spline Sans Mono',monospace;font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:var(--sage)}
+.stmt-v{font-family:'Spline Sans Mono',monospace;font-size:.9rem;color:var(--paper);text-align:right}
+.stmt-v.big{font-family:'Clash Display',sans-serif;font-weight:600;font-size:1.2rem}
+.hint{font-family:'Spline Sans Mono',monospace;font-size:.76rem;color:var(--amber);margin-top:16px;padding-left:12px;border-left:2px solid var(--amber);line-height:1.6}
+.hint a{color:var(--amber);text-decoration:underline;text-underline-offset:2px}
+
+/* inputs — underline only */
+.inputs{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:26px}
+.field label{display:block;font-family:'Spline Sans Mono',monospace;font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--sage);margin-bottom:8px}
+.field input{width:100%;background:transparent;border:none;border-bottom:1px solid var(--sage);color:var(--paper);font-family:'Clash Display',sans-serif;font-weight:600;font-size:1.5rem;padding:4px 0}
+.field input:focus{outline:none;border-bottom-color:var(--purple)}
+
+/* the numbered flow */
+.flow{display:flex;flex-direction:column}
+.step{display:grid;grid-template-columns:auto 1fr;gap:20px;padding:22px 0;border-bottom:1px solid var(--line-2);align-items:start}
+.step:last-child{border-bottom:none}
+.step-n{font-family:'Clash Display',sans-serif;font-weight:700;font-size:2.4rem;line-height:.8;color:var(--ink-3);font-variant-numeric:tabular-nums}
+.step-body h3{font-family:'Clash Display',sans-serif;font-weight:600;font-size:1.15rem;letter-spacing:-.01em;margin-bottom:4px}
+.step-body p{font-size:.85rem;color:var(--sage);margin-bottom:14px;max-width:26rem}
+.countdown{font-family:'Spline Sans Mono',monospace;font-size:.72rem;color:var(--amber);margin-top:16px;letter-spacing:.04em}
+
+/* ledger */
+.log-item{font-family:'Spline Sans Mono',monospace;font-size:.76rem;padding:12px 0 12px 12px;border-left:2px solid var(--sage);border-bottom:1px solid var(--line-2);display:flex;flex-direction:column;gap:5px;word-break:break-all}
+.log-item.ok{border-left-color:var(--mint)}
+.log-item.err{border-left-color:var(--danger)}
+.log-item .t{font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--sage)}
+.log-item.ok .t{color:var(--mint)}
+.log-item.err .t{color:var(--danger)}
+.log-item a{color:var(--mint);text-decoration:underline;text-underline-offset:2px}
+.empty{font-family:'Spline Sans Mono',monospace;font-size:.76rem;color:var(--sage)}
+
+footer{padding:26px 0 40px;font-family:'Spline Sans Mono',monospace;font-size:.64rem;color:var(--sage);letter-spacing:.04em;line-height:1.8}
+
+@media(max-width:440px){
+  .inputs{grid-template-columns:1fr;gap:16px}
+  .step{grid-template-columns:auto 1fr;gap:14px}
+  .step-n{font-size:1.9rem}
+}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <div class="mast">
+    <div class="wordmark"><span class="dot"></span>SubSol</div>
+    <div class="mast-meta">Devnet · Live specimen</div>
+  </div>
+  <div class="specimen-id">PROGRAM <a href="https://explorer.solana.com/address/HmYLKgRmZDAUG1tDPJ5xf55ut664EioACQQSyBAbA8MB?cluster=devnet" target="_blank" rel="noopener">HmYLKgRmZDAUG1tDPJ5xf55ut664EioACQQSyBAbA8MB</a></div>
+
+  <div class="hero">
+    <div class="eyebrow">Live recurring payment</div>
+    <h1>Run a real<br><em>subscription</em><br>on-chain.</h1>
+    <p class="deck">Connect Phantom, then create a recurring USDC subscription, process a payment, and cancel. Every action is a real transaction against the deployed program on Solana devnet — no simulation.</p>
+  </div>
+
+  <!-- WALLET -->
+  <div class="sec">
+    <div class="sec-label">Wallet</div>
+    <div id="walletDisconnected">
+      <button class="btn btn-purple btn-full" id="connectBtn">Connect Phantom</button>
+    </div>
+    <div id="walletConnected" style="display:none">
+      <div class="stmt-row"><span class="stmt-k">Address</span><span class="stmt-v" id="addr">—</span></div>
+      <div class="stmt-row"><span class="stmt-k">SOL · devnet</span><span class="stmt-v big" id="solBal">—</span></div>
+      <div class="stmt-row"><span class="stmt-k">USDC · devnet</span><span class="stmt-v big" id="usdcBal">—</span></div>
+      <div class="stmt-row"><span class="stmt-k">Session</span><span class="stmt-v"><button class="btn btn-line" id="disconnectBtn" style="padding:.4rem .8rem;font-size:.75rem">Disconnect</button></span></div>
+      <div id="fundHint" class="hint" style="display:none"></div>
+    </div>
+  </div>
+
+  <!-- DEMO -->
+  <div class="sec" id="demoCard" style="display:none">
+    <div class="sec-label">Subscription terms</div>
+    <div class="inputs">
+      <div class="field"><label>Amount · USDC</label><input id="amount" value="0.10" inputmode="decimal"></div>
+      <div class="field"><label>Period · seconds</label><input id="period" value="15" inputmode="numeric"></div>
+    </div>
+    <div class="flow">
+      <div class="step">
+        <div class="step-n">01</div>
+        <div class="step-body">
+          <h3>Create subscription</h3>
+          <p>Records the terms to a PDA and approves the delegate to pull payments.</p>
+          <button class="btn btn-primary btn-full" id="createBtn" disabled>Create subscription</button>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-n">02</div>
+        <div class="step-body">
+          <h3>Process payment</h3>
+          <p>Pulls one period's USDC to the merchant. Gated until the period elapses.</p>
+          <button class="btn btn-primary btn-full" id="processBtn" disabled>Process payment</button>
+          <div class="countdown" id="countdown"></div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-n">03</div>
+        <div class="step-body">
+          <h3>Cancel subscription</h3>
+          <p>Revokes the delegate and closes the account, refunding rent.</p>
+          <button class="btn btn-line btn-full" id="cancelBtn" disabled>Cancel subscription</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LEDGER -->
+  <div class="sec" id="logCard" style="display:none">
+    <div class="sec-label">Ledger</div>
+    <div id="log"><div class="empty">Confirmed transactions appear here with Explorer links.</div></div>
+  </div>
+
+  <footer>
+    Built by Oyewole Emmanuel · University of Lagos<br>
+    Solana Summer School 2026 · Capstone
+  </footer>
+
+</div>
+
+<script type="module">
+import * as web3 from 'https://esm.sh/@solana/web3.js@1.95.8';
+import { Buffer } from 'https://esm.sh/buffer@6.0.3';
+window.Buffer = window.Buffer || Buffer;
+
+// ---- constants (all verified against the deployed program) ----
+const PROGRAM_ID = new web3.PublicKey('HmYLKgRmZDAUG1tDPJ5xf55ut664EioACQQSyBAbA8MB');
+const USDC_MINT  = new web3.PublicKey('4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU'); // Circle devnet USDC, 6 decimals
+const TOKEN_PROGRAM = new web3.PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
+const ATA_PROGRAM   = new web3.PublicKey('ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL');
+const SYS_PROGRAM   = web3.SystemProgram.programId;
+const USDC_DECIMALS = 6;
+
+const DISC = {
+  create:  Uint8Array.from([65, 71, 10, 60, 249, 82, 197, 12]),
+  process: Uint8Array.from([189, 81, 30, 198, 139, 186, 115, 23]),
+  cancel:  Uint8Array.from([60, 139, 189, 242, 191, 208, 143, 18]),
+};
+
+const connection = new web3.Connection(web3.clusterApiUrl('devnet'), 'confirmed');
+const provider = () => window.phantom?.solana || window.solana;
+
+let pubkey = null;        // connected wallet (subscriber)
+let merchant = null;      // ephemeral merchant keypair (persisted for the session)
+let subPda = null;        // subscription PDA
+let createdAt = 0, periodSecs = 0;
+
+// ---- helpers ----
+const $ = id => document.getElementById(id);
+const short = k => { const s = k.toString(); return s.slice(0,4)+'…'+s.slice(-4); };
+const exUrl = sig => `https://explorer.solana.com/tx/${sig}?cluster=devnet`;
+
+function ataFor(owner){
+  return web3.PublicKey.findProgramAddressSync(
+    [owner.toBuffer(), TOKEN_PROGRAM.toBuffer(), USDC_MINT.toBuffer()],
+    ATA_PROGRAM
+  )[0];
+}
+function subscriptionPda(merchantPk, subscriberPk){
+  return web3.PublicKey.findProgramAddressSync(
+    [Buffer.from('subscription'), merchantPk.toBuffer(), subscriberPk.toBuffer()],
+    PROGRAM_ID
+  )[0];
+}
+// encode u64 / i64 little-endian
+function u64(n){ const b=new Uint8Array(8); let v=BigInt(n); for(let i=0;i<8;i++){b[i]=Number(v&0xffn); v>>=8n;} return b; }
+function i64(n){ const b=new Uint8Array(8); let v=BigInt(n); if(v<0n) v=(1n<<64n)+v; for(let i=0;i<8;i++){b[i]=Number(v&0xffn); v>>=8n;} return b; }
+function concat(...arrs){ let len=arrs.reduce((a,x)=>a+x.length,0); const out=new Uint8Array(len); let o=0; for(const a of arrs){out.set(a,o); o+=a.length;} return out; }
+
+function log(kind, title, sig, extra){
+  const box = $('log');
+  if(box.querySelector('.empty')) box.innerHTML='';
+  const el = document.createElement('div');
+  el.className = 'log-item '+(kind==='error'?'err':kind==='ok'?'ok':'');
+  let body = extra ? `<span>${extra}</span>` : '';
+  if(sig) body += `<a href="${exUrl(sig)}" target="_blank" rel="noopener">View on Explorer ↗</a>`;
+  el.innerHTML = `<span class="t">${title}</span>${body}`;
+  box.prepend(el);
+}
+
+// ---- ATA create instruction (idempotent) built by hand, no spl-token dep ----
+function createAtaIx(payer, owner){
+  const ata = ataFor(owner);
+  return new web3.TransactionInstruction({
+    programId: ATA_PROGRAM,
+    keys: [
+      { pubkey: payer, isSigner:true, isWritable:true },
+      { pubkey: ata, isSigner:false, isWritable:true },
+      { pubkey: owner, isSigner:false, isWritable:false },
+      { pubkey: USDC_MINT, isSigner:false, isWritable:false },
+      { pubkey: SYS_PROGRAM, isSigner:false, isWritable:false },
+      { pubkey: TOKEN_PROGRAM, isSigner:false, isWritable:false },
+    ],
+    data: Buffer.from(Uint8Array.from([1])), // createIdempotent
+  });
+}
+
+// ---- program instructions ----
+function createSubIx(amountBase, period){
+  const subscriberAta = ataFor(pubkey);
+  return new web3.TransactionInstruction({
+    programId: PROGRAM_ID,
+    keys: [
+      { pubkey: subPda, isSigner:false, isWritable:true },
+      { pubkey: merchant.publicKey, isSigner:false, isWritable:false },
+      { pubkey: pubkey, isSigner:true, isWritable:true },
+      { pubkey: subscriberAta, isSigner:false, isWritable:true },
+      { pubkey: TOKEN_PROGRAM, isSigner:false, isWritable:false },
+      { pubkey: SYS_PROGRAM, isSigner:false, isWritable:false },
+    ],
+    data: Buffer.from(concat(DISC.create, u64(amountBase), i64(period))),
+  });
+}
+function processIx(){
+  return new web3.TransactionInstruction({
+    programId: PROGRAM_ID,
+    keys: [
+      { pubkey: subPda, isSigner:false, isWritable:true },
+      { pubkey: ataFor(pubkey), isSigner:false, isWritable:true },
+      { pubkey: ataFor(merchant.publicKey), isSigner:false, isWritable:true },
+      { pubkey: TOKEN_PROGRAM, isSigner:false, isWritable:false },
+    ],
+    data: Buffer.from(DISC.process),
+  });
+}
+function cancelIx(){
+  return new web3.TransactionInstruction({
+    programId: PROGRAM_ID,
+    keys: [
+      { pubkey: subPda, isSigner:false, isWritable:true },
+      { pubkey: pubkey, isSigner:true, isWritable:true },
+      { pubkey: ataFor(pubkey), isSigner:false, isWritable:true },
+      { pubkey: TOKEN_PROGRAM, isSigner:false, isWritable:false },
+    ],
+    data: Buffer.from(DISC.cancel),
+  });
+}
+
+async function sendTx(ixs){
+  const tx = new web3.Transaction();
+  ixs.forEach(ix => tx.add(ix));
+  tx.feePayer = pubkey;
+  tx.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
+  const signed = await provider().signTransaction(tx);
+  const sig = await connection.sendRawTransaction(signed.serialize());
+  await connection.confirmTransaction(sig, 'confirmed');
+  return sig;
+}
+
+// ---- balances ----
+async function refresh(){
+  try{
+    const sol = await connection.getBalance(pubkey);
+    $('solBal').textContent = (sol/web3.LAMPORTS_PER_SOL).toFixed(3);
+    let usdc = 0;
+    try{
+      const acc = await connection.getTokenAccountBalance(ataFor(pubkey));
+      usdc = acc.value.uiAmount || 0;
+    }catch(_){ usdc = 0; }
+    $('usdcBal').textContent = usdc.toFixed(2);
+
+    const hint = $('fundHint');
+    const needs = [];
+    if(sol/web3.LAMPORTS_PER_SOL < 0.02) needs.push('devnet SOL (for fees) — <a href="https://faucet.solana.com" target="_blank" rel="noopener">faucet.solana.com</a>');
+    if(usdc < 0.1) needs.push('devnet USDC — <a href="https://faucet.circle.com" target="_blank" rel="noopener">faucet.circle.com</a> (pick Solana Devnet)');
+    if(needs.length){ hint.style.display='block'; hint.innerHTML = 'To run the demo you still need: '+needs.join(' · '); }
+    else hint.style.display='none';
+
+    $('createBtn').disabled = false;
+  }catch(e){ log('error','Balance check failed', null, e.message); }
+}
+
+// ---- connect / disconnect ----
+async function connect(){
+  const p = provider();
+  if(!p){ log('error','Phantom not found', null, 'Install Phantom, or open this page in the Phantom in-app browser.'); return; }
+  try{
+    const res = await p.connect();
+    pubkey = new web3.PublicKey(res.publicKey.toString());
+    // restore or create ephemeral merchant for this session
+    const saved = sessionStorage.getItem('subsol_merchant');
+    if(saved){ merchant = web3.Keypair.fromSecretKey(Uint8Array.from(JSON.parse(saved))); }
+    else { merchant = web3.Keypair.generate(); sessionStorage.setItem('subsol_merchant', JSON.stringify(Array.from(merchant.secretKey))); }
+    subPda = subscriptionPda(merchant.publicKey, pubkey);
+
+    $('addr').textContent = short(pubkey);
+    $('walletDisconnected').style.display='none';
+    $('walletConnected').style.display='block';
+    $('demoCard').style.display='block';
+    $('logCard').style.display='block';
+    await refresh();
+  }catch(e){ log('error','Connection rejected', null, e.message); }
+}
+function disconnect(){
+  try{ provider()?.disconnect(); }catch(_){}
+  pubkey=null; subPda=null;
+  $('walletDisconnected').style.display='block';
+  $('walletConnected').style.display='none';
+  $('demoCard').style.display='none';
+  ['createBtn','processBtn','cancelBtn'].forEach(id=>$(id).disabled=true);
+}
+
+// ---- step handlers ----
+$('connectBtn').onclick = connect;
+$('disconnectBtn').onclick = disconnect;
+
+$('createBtn').onclick = async () => {
+  const amt = parseFloat($('amount').value);
+  const per = parseInt($('period').value, 10);
+  if(!(amt>0) || !(per>0)){ log('error','Invalid input', null, 'Enter a positive amount and period.'); return; }
+  const base = Math.round(amt * 10**USDC_DECIMALS);
+  $('createBtn').disabled = true;
+  log('pending','Creating subscription…', null, `${amt} USDC every ${per}s`);
+  try{
+    // create merchant's USDC account (so payments have a destination) + create subscription, in one tx
+    const sig = await sendTx([ createAtaIx(pubkey, merchant.publicKey), createSubIx(base, per) ]);
+    createdAt = Math.floor(Date.now()/1000); periodSecs = per;
+    log('ok','Subscription created · delegate approved', sig);
+    startCountdown();
+    $('cancelBtn').disabled = false;
+  }catch(e){ log('error','Create failed', null, e.message); $('createBtn').disabled=false; }
+};
+
+$('processBtn').onclick = async () => {
+  $('processBtn').disabled = true;
+  log('pending','Processing payment…', null, 'Pulling USDC via the approved delegate');
+  try{
+    const sig = await sendTx([ processIx() ]);
+    log('ok','Payment processed', sig);
+    createdAt = Math.floor(Date.now()/1000); // next period resets
+    startCountdown();
+    await refresh();
+  }catch(e){
+    const msg = /TooEarly|0x1770/.test(e.message) ? 'Period has not elapsed yet — wait for the countdown.' : e.message;
+    log('error','Process failed', null, msg);
+    $('processBtn').disabled=false;
+  }
+};
+
+$('cancelBtn').onclick = async () => {
+  $('cancelBtn').disabled = true;
+  log('pending','Cancelling…', null, 'Revoking delegate and closing the account');
+  try{
+    const sig = await sendTx([ cancelIx() ]);
+    log('ok','Subscription cancelled · delegate revoked', sig);
+    $('processBtn').disabled = true;
+    $('createBtn').disabled = false;
+    $('countdown').textContent='';
+    await refresh();
+  }catch(e){ log('error','Cancel failed', null, e.message); $('cancelBtn').disabled=false; }
+};
+
+// ---- countdown gating process_payment ----
+let cdTimer = null;
+function startCountdown(){
+  clearInterval(cdTimer);
+  $('processBtn').disabled = true;
+  cdTimer = setIn
